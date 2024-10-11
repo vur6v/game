@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لعبة مطابقة الألوان</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+    }
+    .game-board {
+      display: grid;
+      grid-template-columns: repeat(4, 100px);
+      grid-gap: 10px;
+    }
+    .tile {
+      width: 100px;
+      height: 100px;
+      background-color: #ccc;
+      cursor: pointer;
+    }
+    #message, #win, #lose {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #fff;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    }
+    #win img {
+      width: 100px;
+      height: 100px;
+    }
+    #timer {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    #restart {
+      display: none;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <audio id="bg-music" src="موسيقى اللعبة.mp3" loop autoplay></audio>
+  <audio id="match-sound" src="صوت لايك.mp3"></audio>
+  <audio id="win-sound" src="صوت الفوز.mp3"></audio>
+  <audio id="lose-sound" src="صوت الخسارة.mp3"></audio>
+
+  <div id="timer">60</div>
+  <div class="game-board"></div>
+  <div id="win">
+    <h1>مبروك! لقد فزت!</h1>
+    <img src="https://via.placeholder.com/100" alt="مشهور">
+    <button id="restart">إعادة اللعب</button>
+  </div>
+  <div id="lose">
+    <h1>للأسف، لقد خسرت!</h1>
+    <button id="restart">إعادة اللعب</button>
+  </div>
+
+  <script>
+    const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'brown'];
+    let tiles = [];
+    let firstTile = null;
+    let secondTile = null;
+    let lockBoard = false;
+    let matchedPairs = 0;
+
+    const colorPairs = [...colors, ...colors];
+    colorPairs.sort(() => Math.random() - 0.5);
+
+    const gameBoard = document.querySelector('.game-board');
+    const winMessage = document.getElementById('win');
+    const loseMessage = document.getElementById('lose');
+    const timerElement = document.getElementById('timer');
+    const restartButton = document.getElementById('restart');
+    let timer;
+
+    // بدء اللعبة
+    function startGame() {
+      tiles = [];
+      firstTile = null;
+      secondTile = null;
+      lockBoard = false;
+      matchedPairs = 0;
+      timer = 60; // عدد الثواني المتاحة
+      timerElement.textContent = timer;
+      winMessage.style.display = 'none';
+      loseMessage.style.display = 'none';
+      restartButton.style.display = 'none';
+      gameBoard.innerHTML = '';
+
+      // إنشاء مربعات اللعبة
+      colorPairs.forEach(color => {
+        const tile = document.createElement('div');
+        tile.classList.add('tile');
+        tile.dataset.color = color;
+        tile.addEventListener('click', flipTile);
+        gameBoard.appendChild(tile);
+        tiles.push(tile);
+      });
+
+      // المؤقت يبدأ
+      const countdown = setInterval(() => {
+        timer--;
+        timerElement.textContent = timer;
+
+        if (timer <= 0) {
+          clearInterval(countdown);
+          showLoseMessage();
+        }
+      }, 1000);
+    }
+
+    // بدء اللعبة عند تحميل الصفحة
+    startGame();
+
+    function flipTile() {
+      if (lockBoard) return;
+      if (this === firstTile) return;
+
+      this.style.backgroundColor = this.dataset.color;
+
+      if (!firstTile) {
+        firstTile = this;
+        return;
+      }
+
+      secondTile = this;
+      checkMatch();
+    }
+
+    function checkMatch() {
+      if (firstTile.dataset.color === secondTile.dataset.color) {
+        disableTiles();
+        matchedPairs++;
+        document.getElementById('match-sound').play(); // تشغيل صوت المطابقة
+        if (matchedPairs === colors.length) {
+          showWinMessage();
+        }
+      } else {
+        unflipTiles();
+      }
+    }
+
+    function disableTiles() {
+      firstTile.removeEventListener('click', flipTile);
+      secondTile.removeEventListener('click', flipTile);
+      resetBoard();
+    }
+
+    function unflipTiles() {
+      lockBoard = true;
+      setTimeout(() => {
+        firstTile.style.backgroundColor = '#ccc';
+        secondTile.style.backgroundColor = '#ccc';
+        resetBoard();
+      }, 1000);
+    }
+
+    function resetBoard() {
+      [firstTile, secondTile] = [null, null];
+      lockBoard = false;
+    }
+
+    function showWinMessage() {
+      document.getElementById('win-sound').play(); // تشغيل صوت الفوز
+      winMessage.style.display = 'block';
+      restartButton.style.display = 'block'; // إظهار زر إعادة اللعب
+      lockBoard = true; // قفل اللعبة
+    }
+
+    function showLoseMessage() {
+      document.getElementById('lose-sound').play(); // تشغيل صوت الخسارة
+      loseMessage.style.display = 'block';
+      restartButton.style.display = 'block'; // إظهار زر إعادة اللعب
+      lockBoard = true; // قفل اللعبة
+    }
+
+    // إعادة اللعب عند الضغط على الزر
+    restartButton.addEventListener('click', startGame);
+  </script>
+</body>
+</html>
